@@ -67,6 +67,21 @@ app.get('/api/admin', (req, res) => {
   res.status(403).json({ error: 'Forbidden' });
 });
 
+// 404 fallback — MUST stay last so it never hides a real route.
+// Express 5: app.use() with no path instead of app.get('*', ...).
+app.use((req, res) => {
+  const isApiPath = req.path === '/api' || req.path.startsWith('/api/');
+
+  if (isApiPath) {
+    res.status(404).json({ error: 'Not found' });
+    return;
+  }
+
+  res
+    .status(404)
+    .send('<h1>404 - Page not found</h1><p>The page you asked for does not exist. <a href="/">Back to home</a></p>');
+});
+
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });
