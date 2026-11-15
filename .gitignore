@@ -1,0 +1,9 @@
+# Dependencies — rebuilt with `npm install`
+node_modules/
+
+# Secrets / environment variables
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
