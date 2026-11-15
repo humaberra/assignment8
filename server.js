@@ -11,9 +11,26 @@ const PORT = process.env.PORT ?? 3000;
 
 const OWNER_NAME = 'Hüma Berra Kolukısa';
 
+const ROBOTS_TXT = [
+  '# robots.txt for the Web Craft Academy information server',
+  'User-agent: *',
+  'Disallow: /api/',
+  'Allow: /',
+  '',
+].join('\n');
+
 app.get('/hello', (req, res) => {
   // res.send with a string defaults to text/html, so set plain text explicitly.
   res.type('text/plain').send(`Hello from ${OWNER_NAME}'s server`);
+});
+
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain').send(ROBOTS_TXT);
+});
+
+app.get('/old-page', (req, res) => {
+  // 301 Moved Permanently: the old page has been replaced by /hello for good.
+  res.redirect(301, '/hello');
 });
 
 app.listen(PORT, () => {
