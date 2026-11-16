@@ -135,3 +135,217 @@ The counter is a plain `let` variable that I created in `server.js`. I do not at
 
 ---
 
+
+## 4. Testing evidence (`curl --include`)
+
+All outputs below were produced on my computer with the server running (`npm run dev`), on 16/11/2026 19:20.
+I ran them in Git Bash on Windows. (In Windows PowerShell the same commands need `curl.exe`, because there `curl` is an alias for `Invoke-WebRequest`.)
+
+### 4.1 Successful JSON response — GET /api/courses
+
+```
+$ curl --include http://localhost:3000/api/courses
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Content-Type: application/json; charset=utf-8
+Content-Length: 244
+ETag: W/"f4-ZLsebvKPmdsArZJpRxhCXrGpHiU"
+Date: Mon, 16 Nov 2026 16:20:42 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+[{"id":1,"title":"Foundations of HTML and CSS","credits":6},{"id":2,"title":"JavaScript in the Browser","credits":6},{"id":3,"title":"Building Interfaces with React","credits":5},{"id":4,"title":"Back-End Development with Node.js","credits":5}]
+```
+
+### 4.2 JSON with real process values — GET /api/status
+
+```
+$ curl --include http://localhost:3000/api/status
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Content-Type: application/json; charset=utf-8
+Content-Length: 60
+ETag: W/"3c-SLuN6PMLsFIHY0Hsqc6GuOfbsa8"
+Date: Mon, 16 Nov 2026 16:20:43 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"status":"ok","nodeVersion":"v24.21.0","uptimeSeconds":657}
+```
+
+### 4.3 Plain text — GET /hello
+
+```
+$ curl --include http://localhost:3000/hello
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Content-Type: text/plain; charset=utf-8
+Content-Length: 41
+ETag: W/"29-x1VdWqQBoN5mNqi4rZQbJ+tA74U"
+Date: Mon, 16 Nov 2026 16:20:43 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+Hello from Hüma Berra Kolukısa's server
+```
+
+### 4.4 Plain-text content type — GET /robots.txt
+
+```
+$ curl --include http://localhost:3000/robots.txt
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Content-Type: text/plain; charset=utf-8
+Content-Length: 97
+ETag: W/"61-J4YKLMF/p98nq6p4QieozkxUbeA"
+Date: Mon, 16 Nov 2026 16:20:43 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+# robots.txt for the Web Craft Academy information server
+User-agent: *
+Disallow: /api/
+Allow: /
+
+```
+
+### 4.5 The 201 response — POST /api/subscribe
+
+```
+$ curl --include --request POST http://localhost:3000/api/subscribe
+HTTP/1.1 201 Created
+X-Powered-By: Express
+Content-Type: application/json; charset=utf-8
+Content-Length: 19
+ETag: W/"13-oWAPIqDXuocNexKhPYW9ayyk98c"
+Date: Mon, 16 Nov 2026 16:20:43 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"subscribed":true}
+```
+
+### 4.6 The 403 response — GET /api/admin
+
+```
+$ curl --include http://localhost:3000/api/admin
+HTTP/1.1 403 Forbidden
+X-Powered-By: Express
+Content-Type: application/json; charset=utf-8
+Content-Length: 21
+ETag: W/"15-TLNzmZqKxaTuFdX/dVWWPBu44/c"
+Date: Mon, 16 Nov 2026 16:20:43 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"error":"Forbidden"}
+```
+
+### 4.7 The redirect — GET /old-page
+
+```
+$ curl --include http://localhost:3000/old-page
+HTTP/1.1 301 Moved Permanently
+X-Powered-By: Express
+Location: /hello
+Vary: Accept
+Content-Type: text/plain; charset=utf-8
+Content-Length: 40
+Date: Mon, 16 Nov 2026 16:20:43 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+Moved Permanently. Redirecting to /hello
+```
+
+### 4.8 404 on an /api path — GET /api/does-not-exist
+
+```
+$ curl --include http://localhost:3000/api/does-not-exist
+HTTP/1.1 404 Not Found
+X-Powered-By: Express
+Content-Type: application/json; charset=utf-8
+Content-Length: 21
+ETag: W/"15-bm7tJgu8FHlq5QU+Y6gDxOGPfRc"
+Date: Mon, 16 Nov 2026 16:20:43 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"error":"Not found"}
+```
+
+### 4.9 404 on a non-API path — GET /no-such-page
+
+```
+$ curl --include http://localhost:3000/no-such-page
+HTTP/1.1 404 Not Found
+X-Powered-By: Express
+Content-Type: text/html; charset=utf-8
+Content-Length: 103
+ETag: W/"67-XrIsRXf/OmwIYrKf3k6UgXoi4eI"
+Date: Mon, 16 Nov 2026 16:20:43 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+<h1>404 - Page not found</h1><p>The page you asked for does not exist. <a href="/">Back to home</a></p>
+```
+
+### 4.10 Headers echo — GET /api/headers
+
+```
+$ curl --include http://localhost:3000/api/headers
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Content-Type: application/json; charset=utf-8
+Content-Length: 42
+ETag: W/"2a-zvEPwPyXSvSguAOkChXoS1+AhlQ"
+Date: Mon, 16 Nov 2026 16:20:43 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"userAgent":"curl/8.21.0","accept":"*/*"}
+```
+
+### 4.11 Request counter — GET /api/stats
+
+```
+$ curl --include http://localhost:3000/api/stats
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Content-Type: application/json; charset=utf-8
+Content-Length: 21
+ETag: W/"15-zUZ9ORV/6zU92ZlP8Y2FjB65xqY"
+Date: Mon, 16 Nov 2026 16:20:43 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"requestsServed":13}
+```
+
+### 4.12 Started from another folder, on another port
+
+```
+$ cd ..
+$ PORT=4000 node assignment8/server.js
+Server running at http://localhost:4000
+
+$ curl --include http://localhost:4000/
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Accept-Ranges: bytes
+Cache-Control: public, max-age=0
+Last-Modified: Mon, 16 Nov 2026 10:52:56 GMT
+ETag: W/"a8c-1a1e3fd13b3"
+Content-Type: text/html; charset=utf-8
+Content-Length: 2700
+Date: Mon, 16 Nov 2026 16:20:46 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+<!DOCTYPE html>
+<html lang="en">
+
+... (rest of index.html)
+```
+
+---
