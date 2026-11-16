@@ -26,6 +26,25 @@ const ROBOTS_TXT = [
   '',
 ].join('\n');
 
+// Our own counter (a variable we created), not a property added to req/res.
+let requestsServed = 0;
+
+// Request logger: one line per request with timestamp, method and URL.
+function requestLogger(req, res, next) {
+  console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
+  next();
+}
+
+// Request counter: counts every request that reaches the server
+// (pages, static files, API calls and 404s).
+function requestCounter(req, res, next) {
+  requestsServed += 1;
+  next();
+}
+
+app.use(requestLogger);
+app.use(requestCounter);
+
 app.get('/hello', (req, res) => {
   // res.send with a string defaults to text/html, so set plain text explicitly.
   res.type('text/plain').send(`Hello from ${OWNER_NAME}'s server`);
@@ -65,6 +84,10 @@ app.post('/api/subscribe', (req, res) => {
 
 app.get('/api/admin', (req, res) => {
   res.status(403).json({ error: 'Forbidden' });
+});
+
+app.get('/api/stats', (req, res) => {
+  res.json({ requestsServed });
 });
 
 // 404 fallback — MUST stay last so it never hides a real route.
