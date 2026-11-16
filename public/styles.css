@@ -75,6 +75,7 @@ button:disabled {
 
 .status {
   font-weight: bold;
+  white-space: pre-line;
 }
 
 .status.success {
