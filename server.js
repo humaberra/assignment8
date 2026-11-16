@@ -2,12 +2,17 @@
 // Author: Hüma Berra Kolukısa (230408056)
 
 import express from 'express';
+import path from 'node:path';
 
 const app = express();
 
 // A hosting platform can choose the port through an environment variable;
 // 3000 is only the fallback for local development.
 const PORT = process.env.PORT ?? 3000;
+
+// Absolute path to public/, built from the folder of THIS file, so the server
+// works no matter which folder it is started from.
+const PUBLIC_DIR = path.join(import.meta.dirname, 'public');
 
 const OWNER_NAME = 'Hüma Berra Kolukısa';
 
@@ -44,6 +49,9 @@ function requestCounter(req, res, next) {
 
 app.use(requestLogger);
 app.use(requestCounter);
+
+// Static files: GET / -> public/index.html, /styles.css, /app.js
+app.use(express.static(PUBLIC_DIR));
 
 app.get('/hello', (req, res) => {
   // res.send with a string defaults to text/html, so set plain text explicitly.

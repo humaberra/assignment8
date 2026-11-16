@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Craft Academy — Information Server</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <h1>Web Craft Academy</h1>
+    <p class="tagline">Full-Stack Web Development Programme</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>About the programme</h2>
+      <p>
+        Web Craft Academy is a made-up, two-semester study programme that takes students
+        from their first HTML page to their own back-end server. The first semester covers
+        HTML, CSS and JavaScript in the browser; the second semester covers React,
+        Node.js and Express.
+      </p>
+      <p>
+        This page is served by a small Express server. Use the buttons below to call each
+        API route and see exactly what the server answers: the status code, the content
+        type and the body.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>Try the API</h2>
+      <div class="buttons">
+        <button type="button" data-method="GET" data-path="/api/courses">GET /api/courses</button>
+        <button type="button" data-method="GET" data-path="/api/status">GET /api/status</button>
+        <button type="button" data-method="GET" data-path="/api/headers">GET /api/headers</button>
+        <button type="button" data-method="POST" data-path="/api/subscribe">POST /api/subscribe</button>
+        <button type="button" data-method="GET" data-path="/api/admin">GET /api/admin</button>
+        <button type="button" data-method="GET" data-path="/api/stats">GET /api/stats</button>
+        <button type="button" data-method="GET" data-path="/api/does-not-exist">GET /api/does-not-exist</button>
+      </div>
+
+      <h3>Other routes</h3>
+      <div class="buttons">
+        <button type="button" data-method="GET" data-path="/hello">GET /hello</button>
+        <button type="button" data-method="GET" data-path="/robots.txt">GET /robots.txt</button>
+        <button type="button" data-method="GET" data-path="/old-page">GET /old-page</button>
+        <button type="button" data-method="GET" data-path="/no-such-page">GET /no-such-page</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Response</h2>
+      <p id="status" class="status">Click a button to send a request.</p>
+      <pre id="output" class="output"></pre>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Assignment 8 — Hüma Berra Kolukısa (230408056)</p>
+  </footer>
+</body>
+</html>
