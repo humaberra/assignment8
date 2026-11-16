@@ -107,15 +107,15 @@ function requestCounter(req, res, next) {
 }
 ```
 
-Example of what the terminal prints when the page is opened and one button is clicked:
+Real output of my terminal when the page is opened and one button is clicked:
 
 ```
 Server running at http://localhost:3000
-2026-11-15T14:20:01.512Z GET /
-2026-11-15T14:20:01.540Z GET /styles.css
-2026-11-15T14:20:01.541Z GET /app.js
-2026-11-15T14:20:01.610Z GET /favicon.ico
-2026-11-15T14:20:05.002Z GET /api/courses
+2026-11-16T16:33:10.408Z GET /
+2026-11-16T16:33:10.423Z GET /styles.css
+2026-11-16T16:33:10.423Z GET /app.js
+2026-11-16T16:33:24.404Z GET /api/courses
+2026-11-16T16:42:20.117Z GET /api/courses
 ```
 
 ### Which requests are counted, and why
@@ -349,3 +349,54 @@ Keep-Alive: timeout=5
 ```
 
 ---
+## 5. Reasoning questions
+
+### 1. Route order
+
+*Experiment:* I moved the whole 404 fallback block directly under `const app = express();`, above the logger, the counter, `express.static` and all routes. After that, every request got a 404: opening `http://localhost:3000/` showed "404 - Page not found" instead of the programme page, `curl /hello` returned a 404 HTML page instead of the plain-text greeting, and `curl /api/courses` returned `404` with `{"error":"Not found"}` instead of the course list. The terminal printed no log lines at all, because the logger was now below the fallback and the requests never reached it. This happens because Express runs middleware and routes in the order they are registered and stops at the first one that sends a response; `app.use` with no path matches every request, so placed first it answers everything and nothing below it ever runs. That is why the fallback must be registered last.
+
+### 2. Middleware
+
+*Experiment:* I deleted the `next();` line from `requestLogger`. The browser tab kept loading (the spinner never stopped) and the page never appeared. The server printed exactly one log line, `GET /`, and nothing else: because the HTML never arrived, the browser never asked for `styles.css` or `app.js`. With `curl --max-time 10 http://localhost:3000/hello` the request waited and then failed with `Operation timed out after 10004 milliseconds with 0 bytes received`. A middleware that neither sends a response nor calls `next()` leaves the request stuck: Express never moves on to the counter, `express.static` or the routes, so nobody ever answers, and the connection stays open until the client gives up.
+
+### 3. Status codes
+
+`201 Created` tells the client that the request did not only succeed but also created something new (here, a subscription), while `200 OK` only says "it worked". Using the precise code lets a client react without reading the body. A missing page must be `404` because the status code is the first thing clients, browsers, search engines and monitoring tools look at; if the server answered `200` with an error message in the body, a `fetch()` call would see `response.ok === true`, and a search engine would index the error page as a real page.
+
+### 4. Configuration
+
+The port is a setting of the environment, not of the code. A hosting platform decides which port the app must listen on and passes it through the `PORT` environment variable, and on my own computer another program might already use 3000 (`EADDRINUSE`). Reading `process.env.PORT ?? 3000` lets the same code run unchanged everywhere: it uses the given port when one exists and falls back to 3000 for local development.
+
+### 5. Dependencies
+
+`node_modules` can contain thousands of files and many megabytes, it depends on the operating system, and it can be rebuilt at any time from `package.json` and `package-lock.json`, so committing it would only make the repository huge. After cloning, a teammate must run `npm install` in the project folder (which installs the exact versions pinned in `package-lock.json`) and then `npm start` or `npm run dev`. This is also why `package-lock.json` *is* committed.
+
+### 6. Same origin
+
+If `index.html` were opened directly from disk, the page's address would be `file:///.../index.html`, so a relative URL like `/api/courses` would point to a file path on the disk instead of to the server, and the requests would fail. Even with a full URL (`http://localhost:3000/api/courses`), the page and the API would have different origins (`file://` or `null` vs. `http://localhost:3000`), and the browser would block the response. This restriction is called the **same-origin policy**; the mechanism a server uses to allow other origins is **CORS** (Cross-Origin Resource Sharing). Serving the page from the same Express server keeps everything on one origin.
+
+---
+
+## 6. Self-study notes
+
+| Topic | What I found | How I used it |
+| --- | --- | --- |
+| Node version and running time | The global `process` object has `process.version` (a string such as `"v24.11.1"`) and `process.uptime()`, which returns how many seconds the process has been running, as a decimal number. (Node docs: [process.version](https://nodejs.org/api/process.html#processversion), [process.uptime()](https://nodejs.org/api/process.html#processuptime)) | `/api/status` returns `nodeVersion: process.version` and `uptimeSeconds: Math.floor(process.uptime())`, so the values are real and change on every call. |
+| Plain-text content type | `res.send()` with a string sets `Content-Type: text/html` by default. `res.type('text/plain')` sets the content type (it is short for setting the `Content-Type` header, like `res.set('Content-Type', 'text/plain')`), and `res.send` then adds `charset=utf-8`. (Express docs: [res.type](https://expressjs.com/en/5x/api.html#res.type), [res.send](https://expressjs.com/en/5x/api.html#res.send)) | Used for `/robots.txt` and `/hello`, so both answer with `text/plain; charset=utf-8` instead of `text/html`. |
+| Showing JSON neatly | `JSON.stringify(value, replacer, space)`: the third argument is the indentation. `JSON.stringify(data, null, 2)` produces multi-line JSON indented by 2 spaces. (MDN: [JSON.stringify](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify)) | `app.js` parses JSON responses and shows them in a `<pre>` element with 2-space indentation. |
+| Choosing the content type in the browser | `response.headers.get('Content-Type')` reads a response header in `fetch`. (MDN: [Headers.get](https://developer.mozilla.org/en-US/docs/Web/API/Headers/get)) | `app.js` calls `response.json()` only when the type is JSON, otherwise `response.text()`, so text and HTML responses (`/hello`, the HTML 404) do not crash the page. |
+| Redirect status | `res.redirect(status, path)` accepts an optional status code first; the default is 302. (Express docs: [res.redirect](https://expressjs.com/en/5x/api.html#res.redirect)) | `/old-page` uses `res.redirect(301, '/hello')`. |
+| Reading request headers | `req.get(name)` reads a request header, case-insensitively, and returns `undefined` if it is missing. | `/api/headers` uses `req.get('User-Agent') ?? null` so a missing header appears as `null` in the JSON instead of disappearing. |
+| Startup errors in Express 5 | In Express 5 the `app.listen` callback receives an `error` argument when the server cannot start (for example `EADDRINUSE`). (Express docs: [app.listen](https://expressjs.com/en/5x/api.html#app.listen)) | The callback checks `error` first, prints a clear message and calls `process.exit(1)`; otherwise it prints the address. |
+| Redirects in `fetch` | `fetch` follows redirects automatically; `response.redirected` is `true` and `response.url` is the final URL. (MDN: [Response.redirected](https://developer.mozilla.org/en-US/docs/Web/API/Response/redirected)) | The **GET /old-page** button shows the final `200` answer from `/hello` and a "Redirected to: /hello" line. The real `301` is visible in curl (section 4.7) and in the DevTools Network tab. |
+
+---
+
+## 7. Challenges I faced
+
+- **A misleading start message (Express 5).** I accidentally started a second copy of the server while the first one was still running. It printed `Server running at http://localhost:3000` and then exited, although the port was already in use. I found out that in Express 5 the `app.listen` callback is also called when starting fails, with the error as its argument. I changed the callback to check `error` first, print `Could not start the server on port 3000: listen EADDRINUSE ...` and exit with code 1, so the message is now honest.
+- **ReferenceErrors while doing the route-order experiment.** When I moved the 404 block, my paste replaced a selected line, so `const PORT` disappeared and the server crashed with `ReferenceError: PORT is not defined`. Reading the first line of the error showed exactly what was missing. I restored the file with `git checkout -- server.js` and repeated the experiment carefully.
+- **Pasting into Git Bash.** Commands pasted into the VS Code Git Bash terminal sometimes arrived with extra characters (`[200~git ...` or a `~` at the end of a URL). That caused `command not found` and once a 404 for `/api/courses~`, which first looked like a bug in my server. I learned to check the line before pressing Enter.
+- **A typo in a file name.** I first created `public/app.jss` instead of `app.js`, so the buttons did nothing because the browser got a 404 for `/app.js`. The request log in the terminal (`GET /app.js`) helped me find it.
+- **Multi-line status text.** The status area showed method, status and content type on one line, because a `<p>` element collapses line breaks. Adding `white-space: pre-line;` to `.status` in `styles.css` fixed it.
+- **Plain text vs. HTML.** I had to remember that `res.send` with a string sends `text/html` by default; `curl --include` showed the real `Content-Type`, and `res.type('text/plain')` fixed it for `/hello` and `/robots.txt`.
