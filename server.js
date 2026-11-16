@@ -113,6 +113,11 @@ app.use((req, res) => {
     .send('<h1>404 - Page not found</h1><p>The page you asked for does not exist. <a href="/">Back to home</a></p>');
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, (error) => {
+  // Express 5 passes startup errors (e.g. EADDRINUSE) to this callback.
+  if (error) {
+    console.error(`Could not start the server on port ${PORT}: ${error.message}`);
+    process.exit(1);
+  }
   console.log(`Server running at http://localhost:${PORT}`);
 });
